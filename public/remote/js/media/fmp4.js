@@ -79,7 +79,9 @@ export class Fmp4Writer {
   }
 
   moov() {
-    const mvhd = full('mvhd', 0, 0, u32(0), u32(0), u32(1000), u32(0), u32(0x00010000), u16(0x0100), zeros(10),
+    // 创建 / 修改时间：1904 年起的秒数（不写的话 QuickTime 等会显示 1970 年）。
+    const macTime = Math.floor(Date.now() / 1000) + 2082844800;
+    const mvhd = full('mvhd', 0, 0, u32(macTime), u32(macTime), u32(1000), u32(0), u32(0x00010000), u16(0x0100), zeros(10),
       matrix(0), zeros(24), u32(this.tracks.length + 1));
     const traks = this.tracks.map((t) => (t.kind === 'video' ? this.videoTrak(t) : this.audioTrak(t)));
     const mvex = box('mvex', ...this.tracks.map((t) => full('trex', 0, 0, u32(t.id), u32(1), u32(0), u32(0), u32(0))));

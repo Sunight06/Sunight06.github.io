@@ -34,8 +34,10 @@ export class Recorder {
    * @param onPart  (file) => void           每写完一个文件回调一次（分段、尺寸变化、停止、回放片段）
    * @param rotation (size) => 0|90|180|270  写进 MP4 的显示旋转（客户端方向）
    */
-  constructor({ createTarget, requestKeyFrame, onState, onLog, onPart, rotation = () => 0 }) {
+  constructor({ createTarget, requestKeyFrame, onState, onLog, onPart, onSaveError, rotation = () => 0 }) {
     this.createTarget = createTarget;
+    /** 某一段没能存成（磁盘满、权限被收回）：(文件名, 错误)。 */
+    this.onSaveError = onSaveError;
     this.requestKeyFrame = requestKeyFrame;
     this.onState = onState;
     this.onLog = onLog;
@@ -268,13 +270,23 @@ export class Recorder {
 
   async closeWriter() {
     if (!this.writer) return;
-    await this.writer.finish();
-    this.closedBytes += this.writer.bytesWritten;
-    const result = await this.target.finish();
-    const file = { ...result, durationMs: this.partElapsedMs() };
-    this.finished.push(file);
+    const writer = this.writer;
+    const target = this.target;
     this.writer = null;
     this.target = null;
+    let result;
+    try {
+      await writer.finish();
+      this.closedBytes += writer.bytesWritten;
+      result = await target.finish();
+    } catch (e) {
+      // 存储空间满、文件夹权限被收回……：不能静默丢掉，告诉用户这一段没存成。
+      this.onLog?.(`保存 ${target?.name ?? ''} 失败：${e.message}`);
+      this.onSaveError?.(target?.name ?? '', e);
+      return;
+    }
+    const file = { ...result, durationMs: this.partElapsedMs() };
+    this.finished.push(file);
     this.onPart?.(file);
   }
 

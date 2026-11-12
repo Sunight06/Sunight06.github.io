@@ -108,7 +108,7 @@ export class Preview {
       this.onStatus?.('预览解码积压，跳到最新画面');
       this.configure(this.hwPreference ?? 'prefer-hardware');
       this.needKey = true;
-      this.session?.send?.(new Uint8Array([17])); // RESET_VIDEO：请手机立即发关键帧
+      this.session?.resetVideo?.(); // 请手机立即发关键帧
       return;
     }
     this.needKey = false;

@@ -13,8 +13,33 @@
     #boot { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
       font: 15px system-ui, "Microsoft YaHei", sans-serif; color: #888; }
   </style>
-  <script type="module" src="js/engine.js"></script>
-  <script src="app/remoteui.js"></script>
+  <script type="importmap" id="sunight-versions">
+{
+  "imports": {
+    "./js/adb/adb.js": "./js/adb/adb.js?v=d453f6c707",
+    "./js/adb/auth.js": "./js/adb/auth.js?v=4035b487b1",
+    "./js/adb/transport.js": "./js/adb/transport.js?v=2e4cb8037a",
+    "./js/bytes.js": "./js/bytes.js?v=61d3209aff",
+    "./js/engine.js": "./js/engine.js?v=77d93cc206",
+    "./js/library.js": "./js/library.js?v=fe5bd2f931",
+    "./js/link.js": "./js/link.js?v=4a5b6455a6",
+    "./js/media/defrag.js": "./js/media/defrag.js?v=1fecdec342",
+    "./js/media/fmp4.js": "./js/media/fmp4.js?v=2cdda44572",
+    "./js/media/msepreview.js": "./js/media/msepreview.js?v=02da5feed0",
+    "./js/media/nal.js": "./js/media/nal.js?v=39513c03c0",
+    "./js/media/preview.js": "./js/media/preview.js?v=0aad9df6ca",
+    "./js/media/transcode.js": "./js/media/transcode.js?v=a086819165",
+    "./js/pinyin.js": "./js/pinyin.js?v=f7da1010c3",
+    "./js/recorder.js": "./js/recorder.js?v=38c896bf94",
+    "./js/scrcpy/control.js": "./js/scrcpy/control.js?v=58be2cf1e4",
+    "./js/scrcpy/options.js": "./js/scrcpy/options.js?v=2c8387b6d5",
+    "./js/scrcpy/session.js": "./js/scrcpy/session.js?v=d26c4bc09d",
+    "./js/storage.js": "./js/storage.js?v=5b89d515f7"
+  }
+}
+  </script>
+  <script type="module" src="js/engine.js?v=77d93cc206"></script>
+  <script src="app/remoteui.js?v=12bad7d630"></script>
 </head>
 <body>
   <div id="boot">正在加载…</div>

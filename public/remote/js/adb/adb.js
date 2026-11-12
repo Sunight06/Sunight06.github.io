@@ -227,7 +227,10 @@ export class Adb {
     const opened = new Promise((resolve, reject) => { stream.openWaiter = { resolve, reject }; });
     this.streams.set(localId, stream);
     await this.send(A_OPEN, localId, 0, utf8.encode(service + '\0'));
-    await opened;
+    // 手机一直不回（调试服务卡住）时不能永远等下去：15 秒没打开就当失败，界面不会卡在「正在同步」。
+    let timer;
+    const timeout = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`手机没有响应（${service.split(':')[0]}）`)), 15000); });
+    try { await Promise.race([opened, timeout]); } catch (e) { this.streams.delete(localId); throw e; } finally { clearTimeout(timer); }
     return stream;
   }
 

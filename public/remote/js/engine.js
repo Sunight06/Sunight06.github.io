@@ -12,7 +12,7 @@ import { AdbKey } from './adb/auth.js';
 import { UsbTransport, WebSocketTransport } from './adb/transport.js';
 import { ScrcpySession, listCapabilities, listApps } from './scrcpy/session.js';
 import { mergeOptions, parseLists } from './scrcpy/options.js';
-import { Control, ACTION } from './scrcpy/control.js';
+import { Control, ACTION, TYPE } from './scrcpy/control.js';
 import { Recorder } from './recorder.js';
 import { Transcoder } from './media/transcode.js';
 import { Preview } from './media/preview.js';
@@ -106,6 +106,7 @@ const s = {
 };
 
 const rt = {
+  wifiAuthFails: 0,
   adb: null, server: null, session: null, link: null, recorder: null, preview: null, folder: null,
   targetFactory: null, restartPending: false, busy: false, toastId: 0, uploadChain: Promise.resolve(),
 };
@@ -281,8 +282,8 @@ function onDisconnected(error) {
   // 无线断开（手机切了网络、锁屏后 Wi-Fi 休眠、中继重启）：自动重连，不用用户再点一次。
   if (s.transport.kind === 'wifi' && !rt.manualDisconnect) scheduleWifiReconnect();
   if (rt.recorder.state !== 'idle') {
-    // 拔线：已写入的分片都在文件里，收个尾就是能播的文件。
-    rt.recorder.stop().then((files) => files.forEach((f) => log(`已保存（连接中断）${f.name}`)));
+    // 拔线：已写入的分片都在文件里，收个尾就是能播的文件。走正常的停止流程（同时关掉转正重编码器）。
+    command('stop', 'disconnect').then(() => log('连接中断，已保存录到的部分')).catch((e) => log(`连接中断后收尾失败：${e.message}`));
   }
   disconnect();
 }
@@ -299,7 +300,19 @@ function scheduleWifiReconnect() {
   rt.wifiRetry = setTimeout(async () => {
     if (s.transport.connected || s.transport.connecting || rt.manualDisconnect) return;
     await connect(WebSocketTransport.connect(`ws://${location.host}/adb?token=${encodeURIComponent(wifiToken())}`), { quiet: true });
-    if (!s.transport.connected && !rt.manualDisconnect) scheduleWifiReconnect();
+    if (s.transport.connected) { rt.wifiAuthFails = 0; return; }
+    if (rt.manualDisconnect) return;
+    // 手机的中继还在（/info 能打开）却连不上：多半是手机上刷新了口令。手机会在连错 10 次后锁 5 分钟，
+    // 所以连错 3 次就停止自动重连，请用户去手机上看新地址；中继本身打不开（网络断了）则一直重试。
+    const relayUp = await fetch('/info', { cache: 'no-store' }).then((r) => r.ok, () => false);
+    if (relayUp && ++rt.wifiAuthFails >= 3) {
+      rt.wifiAuthFails = 0;
+      s.reconnecting = false;
+      toast('无线口令可能已在手机上更换：请在手机「远程」页查看新地址后重新打开');
+      emit();
+      return;
+    }
+    scheduleWifiReconnect();
   }, rt.reconnectDelay);
 }
 
@@ -313,6 +326,10 @@ async function disconnect() {
   const adb = rt.adb;
   rt.adb = null;
   rt.idlePaused = false; clearTimeout(rt.idleTimer);
+  // 换一台手机连上来时不能沿用上一台的应用列表、熄屏状态和转屏动画。
+  if (rt.rot) { rt.rot.ghost.remove(); rt.rot = null; rt.preview.canvas.style.opacity = '1'; }
+  s.apps = { status: 'idle', list: [], recent: s.apps.recent, listVersion: (s.apps.listVersion ?? 0) + 1 };
+  s.phoneScreenOff = false;
   await adb?.close().catch(() => {});
   s.transport = { connected: false, connecting: false, kind: null, label: '' };
   s.app = { connected: false, info: null };
@@ -612,6 +629,7 @@ async function startTranscoderIfNeeded(info) {
     bitrate: +(args.video_bit_rate ?? 12_000_000),
     fps: Math.min(+(args.max_fps ?? 60) || 60, 120),
     keyFrameSeconds,
+    constantBitrate: /bitrate-mode=2/.test(args.video_codec_options ?? ''),
     rotation: () => rt.preview.rotation || 0,
     onPacket: (p) => rt.recorder.onVideo(p),
     onLog: log,
@@ -781,8 +799,25 @@ async function uploadOne(name, getBlob, mime) {
  * 不走文件通道：那条通道是排队的，前面要是正在回传一个几百 MB 的视频，截图就得一直等，
  * 悬浮球那边看起来就是「卡住了」。截图只有几 MB，一条消息就带过去了。
  */
+/**
+ * 截图前确保画布上是「此刻」的画面：待机省电暂停了画面、或用户关了预览时，画布上留的是旧帧，
+ * 直接截会悄悄存下一张过时的图。先把画面接回来 / 临时恢复解码，等到一帧新画面再截。
+ */
+async function ensureFreshFrame() {
+  if (rt.idlePaused) await wakeSession();
+  const p = rt.preview;
+  const before = p.frames;
+  p.enabled = true;
+  rt.session?.send(Control.empty(TYPE.RESET_VIDEO)); // 请手机立刻发关键帧
+  const t0 = performance.now();
+  while (p.frames === before && performance.now() - t0 < 5000) await new Promise((r) => setTimeout(r, 30));
+  p.enabled = s.preview; // 恢复成用户当前的选择（截图期间可能被点过开关）
+  if (p.frames === before) throw new Error('没能截到画面：请确认手机已解锁、画面正常后再试');
+}
+
 async function screenshotForPhone() {
-  if (!s.scrcpy.width || !rt.preview.frames) throw new Error('电脑端还没有可截取的画面');
+  if (!s.scrcpy.width && !rt.idlePaused) throw new Error('电脑端还没有可截取的画面');
+  await ensureFreshFrame();
   const src = rt.preview.canvas;
   const q = rt.preview.rotation || 0;
   const out = document.createElement('canvas');
@@ -808,6 +843,8 @@ async function screenshotForPhone() {
 // ── 无线 ────────────────────────────────────────────────────────────
 async function enableTcpip() {
   if (!rt.adb || s.wireless.status === 'enabling') return;
+  // 切到无线时手机的调试服务会重启，USB 连接随之断开：录制中这样做会把录制截断。
+  if (rt.recorder.state !== 'idle') { toast('正在录制，停止后再切换到无线'); return; }
   s.wireless = { status: 'enabling', error: '' };
   emit();
   try {
@@ -898,7 +935,7 @@ const actions = {
     s.preview = !!on;
     rt.preview.enabled = s.preview;
     localStorage.setItem('sunight.remote.preview', s.preview ? 'on' : 'off');
-    if (s.preview) rt.session?.send(Control.empty(17));
+    if (s.preview) rt.session?.send(Control.empty(TYPE.RESET_VIDEO));
     applyVideoPlacement();
     emit();
   },
@@ -1146,14 +1183,19 @@ async function init() {
   canvas.tabIndex = 0;
   document.documentElement.appendChild(canvas);
   rt.preview = new Preview(canvas, { onStatus: log });
+  // 申请持久化存储：没选文件夹时录像存在浏览器里，免得空间紧张时被浏览器悄悄清掉。
+  navigator.storage?.persist?.().catch(() => {});
   rt.preview.controlEnabled = s.control;
   rt.preview.enabled = s.preview;
   rt.preview.onFirstFrame = () => { if (rt.rot) { rt.rot.liveReady = true; finishRotation(); } };
   rt.recorder = new Recorder({
     createTarget: (name) => rt.targetFactory(name),
-    requestKeyFrame: () => (rt.transcoder ? rt.transcoder.requestKeyFrame() : rt.session?.resetVideo()),
+    // 转正重编码时两头都要：编码器下一帧强制关键帧，同时让手机立刻出一帧——画面静止时手机不出新帧，
+    // 只设编码器那一头会让「继续录制」迟迟等不到关键帧。
+    requestKeyFrame: () => { rt.transcoder?.requestKeyFrame(); return rt.session?.resetVideo(); },
     onLog: log,
     onPart: onPartFinished,
+    onSaveError: (name, e) => toast(`${name || '这一段视频'}没有保存成功：${e.message}。请检查电脑的磁盘空间或保存文件夹`),
     rotation: fileRotation,
     onState: (snap) => { s.rec = snap; emit(); sendState(); },
   });

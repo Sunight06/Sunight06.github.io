@@ -21,8 +21,10 @@ export class Transcoder {
    * @param rotation () => 0..3：此刻要把内容顺时针转几个 90° 才是正的
    * @param onPacket (packet) => void：与 scrcpy 视频包同形
    */
-  constructor({ codec, width, height, bitrate, fps, keyFrameSeconds = 2, rotation, onPacket, onLog }) {
+  constructor({ codec, width, height, bitrate, fps, keyFrameSeconds = 2, constantBitrate = false, rotation, onPacket, onLog }) {
     this.codec = codec;
+    /** 手机设置里选了 CBR（恒定码率）时重编码也用恒定码率。 */
+    this.constantBitrate = constantBitrate;
     this.width = width & ~1;
     this.height = height & ~1;
     this.bitrate = bitrate;
@@ -47,7 +49,7 @@ export class Transcoder {
       for (const string of CODEC_CANDIDATES[codec]) {
         const config = {
           codec: string, width: this.width, height: this.height, bitrate: this.bitrate, framerate: this.fps,
-          latencyMode: 'realtime', bitrateMode: 'variable', hardwareAcceleration: 'prefer-hardware',
+          latencyMode: 'realtime', bitrateMode: this.constantBitrate ? 'constant' : 'variable', hardwareAcceleration: 'prefer-hardware',
           ...(codec === 'h264' ? { avc: { format: 'annexb' } } : { hevc: { format: 'annexb' } }),
         };
         const { supported } = await VideoEncoder.isConfigSupported(config).catch(() => ({ supported: false }));
