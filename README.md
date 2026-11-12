@@ -8,7 +8,7 @@ Sunight（夙夜）的个人技术博客，聚焦 **Android 系统开发 / Shizu
 站点由 [Astro](https://astro.build) 在构建期生成纯静态 HTML，托管于 GitHub Pages。
 没有后端、没有数据库、没有前端框架运行时。
 
-线上地址：<https://sunightz.github.io>
+线上地址：<https://sunight06.github.io>
 
 ---
 
@@ -154,7 +154,7 @@ Frontmatter 字段：
    www.sunight.cn
    ```
 
-3. 在域名服务商处添加 DNS 记录（CNAME 指向 `sunightz.github.io`，或 A 记录指向 GitHub Pages 的 IP）；
+3. 在域名服务商处添加 DNS 记录（CNAME 指向 `sunight06.github.io`，或 A 记录指向 GitHub Pages 的 IP）；
 4. 回到 **Settings → Pages** 勾选 **Enforce HTTPS**。
 
 > 注意：`site` 会影响 canonical、RSS 与 sitemap 里的绝对链接，改域名时务必同步修改。
@@ -205,7 +205,7 @@ allowBuilds:
 ## 「小白录制」官网（`screenrecorder/`）
 
 同一仓库里还托管着 Android 应用「小白录制」的官网，用 [VitePress](https://vitepress.dev) 写成，
-线上地址 <https://sunightz.github.io/screenrecorder/>。它是独立的 pnpm 工作区成员，`base` 设为
+线上地址 <https://sunight06.github.io/screenrecorder/>。它是独立的 pnpm 工作区成员，`base` 设为
 `/screenrecorder/`，构建产物由 `scripts/sync-screenrecorder-site.mjs` 复制到 `public/screenrecorder/`，
 再由 Astro 构建一起发布——博客与官网互不影响。
 
@@ -249,7 +249,7 @@ pnpm build:all         # 构建官网 → 同步到 public/screenrecorder/ → A
 本地不需要构建，也不需要提交任何产物（`dist/`、`public/screenrecorder/` 都已在 `.gitignore` 里）。
 
 ```powershell
-cd D:\AndroidStudioProjects\SunightZ.github.io
+cd D:\AndroidStudioProjects\Sunight06.github.io
 
 git status                      # 先看改了哪些文件
 git add -A                      # 新增的 .md 也要加上，否则推上去站点不会变
@@ -259,8 +259,8 @@ git push
 
 推完等 1～2 分钟，看这两处：
 
-- 站点：<https://sunightz.github.io/>（博客）、<https://sunightz.github.io/screenrecorder/>（官网）
-- 进度：<https://github.com/SunightZ/SunightZ.github.io/actions> 里 `Deploy to GitHub Pages` 转绿即完成
+- 站点：<https://sunight06.github.io/>（博客）、<https://sunight06.github.io/screenrecorder/>（官网）
+- 进度：<https://github.com/Sunight06/Sunight06.github.io/actions> 里 `Deploy to GitHub Pages` 转绿即完成
 
 **页面没变化时**：先强刷（`Ctrl + F5`）排除浏览器缓存；再看 Actions 那次运行是否成功、点进去读日志。
 

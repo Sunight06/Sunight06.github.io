@@ -31,7 +31,7 @@ export const NAV = [
 
 /** 社交与订阅链接 */
 export const SOCIALS = [
-  { label: 'GitHub', href: 'https://github.com/SunightZ', icon: 'github' },
+  { label: 'GitHub', href: 'https://github.com/Sunight06', icon: 'github' },
   { label: 'RSS', href: '/rss.xml', icon: 'rss' },
   { label: 'Email', href: 'mailto:3622281245@qq.com', icon: 'mail' },
 ];

@@ -4,9 +4,9 @@ import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-  // GitHub Pages 用户站点（SunightZ.github.io）发布在根路径。
+  // GitHub Pages 用户站点（sunight06.github.io）发布在根路径。
   // 若改用自定义域名（例如 https://www.sunight.cn），只需修改这里并添加 public/CNAME。
-  site: 'https://sunightz.github.io',
+  site: 'https://sunight06.github.io',
   trailingSlash: 'ignore',
   integrations: [
     sitemap({

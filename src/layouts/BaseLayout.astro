@@ -26,7 +26,7 @@ const {
 } = Astro.props;
 
 const pageTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} · ${SITE.tagline}`;
-const site = Astro.site ?? new URL('https://sunightz.github.io');
+const site = Astro.site ?? new URL('https://sunight06.github.io');
 // 产物是目录式的（/posts/x/index.html），canonical 统一带结尾斜杠，避免多一次跳转
 const pathname = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
 const canonical = new URL(pathname, site).href;

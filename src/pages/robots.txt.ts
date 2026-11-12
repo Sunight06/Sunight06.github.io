@@ -1,7 +1,7 @@
 import type { APIContext } from 'astro';
 
 export async function GET({ site }: APIContext) {
-  const base = (site?.href ?? 'https://sunightz.github.io/').replace(/\/+$/, '');
+  const base = (site?.href ?? 'https://sunight06.github.io/').replace(/\/+$/, '');
 
   const body = `User-agent: *
 Allow: /

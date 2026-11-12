@@ -48,7 +48,7 @@ export default defineConfig({
           { text: '更新日志', link: '/changelog' },
         ],
       },
-      { text: '博客', link: 'https://sunightz.github.io/' },
+      { text: '博客', link: 'https://sunight06.github.io/' },
     ],
     sidebar: {
       '/guide/': [
@@ -190,6 +190,6 @@ export default defineConfig({
       message: '全部处理都在你的设备上完成 · 无账号 · 无云端 · 不上传',
       copyright: '© 2026 左一铭 · 鲁ICP备2024133585号-2A',
     },
-    socialLinks: [{ icon: 'github', link: 'https://github.com/SunightZ' }],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/Sunight06' }],
   },
 })
