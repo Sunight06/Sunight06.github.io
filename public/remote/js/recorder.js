@@ -255,12 +255,14 @@ export class Recorder {
   async openWriter() {
     const cfg = parseVideoConfig(this.videoCodec, this.videoConfig);
     const name = this.part === 1 ? `${this.baseName}.mp4` : `${this.baseName}_${this.part}.mp4`;
-    this.target = await this.createTarget(name);
+    const target = await this.createTarget(name);
+    this.target = target;
     const audio = audioSpec(this.audioCodec, this.audioConfig);
     this.writer = new Fmp4Writer({
       video: { ...cfg, width: this.videoSize.width, height: this.videoSize.height, rotation: this.rotation(this.videoSize) },
       audio,
-      sink: (bytes) => this.target.write(bytes),
+      // 绑定到这一段自己的文件：收尾时 this.target 已经清空（或已换成下一段），最后一块数据仍要写进这个文件。
+      sink: (bytes) => target.write(bytes),
     });
     this.writerConfig = this.videoConfig;
     this.writerSize = { ...this.videoSize };
