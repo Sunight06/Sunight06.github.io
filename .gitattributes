@@ -10,6 +10,16 @@
 *.ico binary
 *.woff binary
 *.woff2 binary
+*.ttf binary
+*.otf binary
+*.wasm binary
+*.mp4 binary
+*.h264 binary
+*.h265 binary
+
+# 电脑远程录制（public/remote/）：scrcpy 服务端 jar 没有扩展名，
+# 落到 `* text=auto eol=lf` 上会被当文本转换，传到设备上就跑不起来了。
+public/remote/scrcpy/* binary
 
 # 构建产物与依赖目录在 GitHub 语言统计中排除
 dist/ linguist-generated=true
